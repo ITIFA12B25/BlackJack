@@ -1,0 +1,8 @@
+# Qt / Qt Creator
+*.pro.user
+*.autosave
+.qtcreator/
+.qtc_clangd/
+
+# Build directories
+build*/
