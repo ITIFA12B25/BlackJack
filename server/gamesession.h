@@ -2,39 +2,52 @@
 #define GAMESESSION_H
 
 #include <QObject>
-#include<QTcpSocket>
-#include<QString>
-#include<QJsonObject>
-#include"gamemanager.h"
+#include <QTcpSocket>
+#include <QString>
+#include <QJsonObject>
 
-// Diese Klasse repräsentiert eine Spiel-Session für einen Client
-//bekommt den Socket des Clients.
+#include "gamemanager.h"
+#include "hand.h"          // Hand / Card
 
+// Repräsentiert eine Server-Session für GENAU einen Client (ein Socket).
+// - liest JSON-Nachrichten (zeilenweise)
+// - verarbeitet Befehle (join/bet/hit/stand)
+// - sendet Antworten als JSON zurück
 class GameSession : public QObject
 {
+    Q_OBJECT
+
 public:
-    // Socket + GameManager übernehmen
-    explicit GameSession(QTcpSocket* socket, GameManager* manager, QObject *parent = nullptr);
-
-private:
-     // Netzwerk
-    QTcpSocket* m_socket;
-        GameManager* m_manager;
-    // Merkt sich, in welchem Spiel der Client ist
-    QString m_gameId;
-
-    // Hilfsfunktionen
-    void handleLine(const QByteArray& line);
-    void handleMessage(const QString& type, const QString& gameIdFromMsg);
-
-    void sendJson(const QJsonObject& obj);
-    void sendError(const QString& msg);
+    // Übernimmt Client-Socket + GameManager (Parent sorgt fürs Aufräumen).
+    explicit GameSession(QTcpSocket* socket, GameManager* manager, QObject* parent = nullptr);
 
 private slots:
-    // Wenn Daten ankommen
+    // Daten vom Client verfügbar.
     void onReadyRead();
-    // Wenn Client trennt
+
+    // Client hat getrennt.
     void onDisconnected();
+
+private:
+    // ---- Netzwerk / Verwaltung ----
+    QTcpSocket*  m_socket  = nullptr;   // Verbindung zu diesem Client
+    GameManager* m_manager = nullptr;   // globale Spielverwaltung
+
+    // ---- Session-Zustand ----
+    QString m_gameId;                   // optional: Spiel-ID (falls genutzt)
+    bool m_joined     = false;          // Client hat "join" gemacht
+    bool m_gameActive = false;          // Runde läuft
+
+    Hand m_playerHand;                 // Karten Spieler
+    Hand m_dealerHand;                 // Karten Dealer
+
+    // ---- Parsing / Routing ----
+    void handleLine(const QByteArray& line);                         // JSON parsen
+    void handleMessage(const QString& type, const QString& gameId);  // Befehl ausführen
+
+    // ---- Antworten ----
+    void sendJson(const QJsonObject& obj);  // JSON + '\n' senden
+    void sendError(const QString& msg);     // {"type":"error","msg":...}
 };
 
 #endif // GAMESESSION_H

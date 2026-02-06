@@ -5,19 +5,21 @@
 #include <QHash>
 
 #include <QString>
+#include "deck.h"
+#include "hand.h"
 
 // Sehr einfacher Spielzustand (nur Totals für Prototyp).
-
+enum class GamePhase { Waiting, Playing, Finished };
 struct GameState {
+    Deck deck;
+    Hand player;
+    Hand dealer;
+    GamePhase phase = GamePhase::Waiting;
 
-    int playerTotal = 0;
-    int dealerTotal = 0;
-    bool finished = false;
-
+    bool playerStood = false;
 };
 
 class GameManager
-
 {
 public:
 

@@ -3,49 +3,43 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
+
 #include "gamesession.h"
+#include "gamemanager.h"
+
 int main(int argc, char *argv[])
 {
-    // Startet eine Qt-Konsolenanwendung.
-    // Notwendig, damit der Event-Loop für Netzwerk funktioniert.
+    // Qt-Konsolenanwendung starten (Event-Loop für TCP notwendig).
     QCoreApplication a(argc, argv);
 
-    // TCP-Server-Objekt erstellen
+    // TCP-Server + zentrale Spielverwaltung
     QTcpServer server;
-
-    // Zentrale Verwaltung aller Spiele (GameId -> Spielzustand)
     GameManager manager;
 
-    // Wird ausgelöst, wenn ein neuer Client eine Verbindung aufbaut
+    // Wird ausgelöst, wenn ein neuer Client verbindet.
     QObject::connect(&server, &QTcpServer::newConnection, [&]() {
-
-        // Alle wartenden Verbindungen nacheinander abarbeiten
         while (server.hasPendingConnections()) {
-
-            // Verbindung (Socket) vom Client übernehmen
             QTcpSocket* socket = server.nextPendingConnection();
-            qDebug() << "Client connected";
+            qDebug() << "Client connected from" << socket->peerAddress().toString()
+                     << "port" << socket->peerPort();
 
-            // Für jeden Client eine eigene Session erstellen
-            // Die Session verarbeitet später alle Nachrichten dieses Clients.
+            // Eigene Session pro Client (Parent = server => wird automatisch aufgeräumt)
             new GameSession(socket, &manager, &server);
         }
     });
 
-    // Portnummer festlegen
+    // Server starten
     const quint16 port = 4242;
 
-    // Server starten und auf Verbindungen warten
-    if (!server.listen(QHostAddress::AnyIPv4 , port)) {
-        // Fehlerfall: Port belegt oder keine Berechtigung
-        qDebug() << "Listen failed:" << server.errorString();
-        return 1;
+    if (!server.listen(QHostAddress::AnyIPv4, port)) {
+        qCritical() << "Server konnte nicht starten auf Port" << port
+                    << "-" << server.errorString();
+        return 1; // ohne laufenden Server macht Event-Loop keinen Sinn
     }
 
-    qDebug() << "Server listening on port" << port;
+    qDebug() << "Server hört auf" << server.serverAddress().toString()
+             << "Port" << server.serverPort();
 
-    // Startet den Qt-Event-Loop
+    // Event-Loop starten
     return a.exec();
-    }
+}

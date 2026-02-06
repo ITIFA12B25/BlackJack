@@ -1,78 +1,121 @@
 #include "mainwindow.h"
+#include "ui_mainwindow.h"
 
-#include <QPushButton>
-#include <QLineEdit>
-#include <QTextEdit>
-#include <QLabel>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QWidget>
 #include <QJsonDocument>
 #include <QJsonObject>
 
-MainWindow::MainWindow()
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
-    // UI ohne .ui Datei bauen (Prototyp).
-    auto* central = new QWidget(this);
-    auto* root = new QVBoxLayout(central);
+    // UI aus der .ui-Datei initialisieren
+    ui->setupUi(this);
 
-    auto* title = new QLabel("BLACKJACK (Prototype)", this);
-    root->addWidget(title);
+    // Start: immer Lobby anzeigen
+    ui->stackedWidget->setCurrentWidget(ui->pageLobby);
 
-    // Eingabe für GameId
-    auto* rowGame = new QHBoxLayout();
-    rowGame->addWidget(new QLabel("GameId:", this));
-    m_gameIdEdit = new QLineEdit(this);
-    m_gameIdEdit->setPlaceholderText("z.B. 123456");
-    rowGame->addWidget(m_gameIdEdit);
-    root->addLayout(rowGame);
+    // Lobby -> Join
+    connect(ui->btnGoJoin, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageJoinRoom);
+    });
 
-    // Buttons
-    m_btnCreate = new QPushButton("Create Game", this);
-    m_btnJoin   = new QPushButton("Join Game", this);
-    m_btnHit    = new QPushButton("Hit", this);
-    m_btnStand  = new QPushButton("Stand", this);
+    // Lobby -> Create
+    connect(ui->btnGoCreate, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageCreateRoom);
+    });
+    //Creat-> Join ->GameSimple
+    connect(ui->btnCreateRoom, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageGameSimple);
+        sendJson(QJsonObject{{"type","create"}});
+    });
+    // CreateRoom -> Back -> Lobby
+    connect(ui->btnBackFromCreate, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageLobby);
+    });
 
-    root->addWidget(m_btnCreate);
-    root->addWidget(m_btnJoin);
+    // JoinRoom -> Back -> Lobby
+    connect(ui->btnBackFromJoin, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageLobby);
+    });
 
-    auto* rowActions = new QHBoxLayout();
-    rowActions->addWidget(m_btnHit);
-    rowActions->addWidget(m_btnStand);
-    root->addLayout(rowActions);
+    // GameSimple -> Leave -> Lobby
+    connect(ui->btnLeaveGame1, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageLobby);
+    });
 
-    // Log-Ausgabe
-    m_log = new QTextEdit(this);
-    m_log->setReadOnly(true);
-    root->addWidget(m_log);
+    // GameTable -> Leave -> Lobby
+    connect(ui->btnLeaveGame2, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageLobby);
+    });
 
-    setCentralWidget(central);
-    resize(420, 420);
+    // GameSimple -> Table View
+    connect(ui->btnSwitchToTable, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageGameTable);
+    });
 
-    // Socket Signale verbinden
+    // GameTable -> Simple View
+    connect(ui->btnSwitchToSimple, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageGameSimple);
+    });
+    // JoinRoom -> JoinSelected -> nur wenn eine Zeile ausgewählt ist
+    connect(ui->btnJoinSelected, &QPushButton::clicked, this, [this]{
+        const int row = ui->tblRooms->currentRow();
+        if (row < 0) {
+            // Keine Auswahl -> nicht wechseln
+            return;
+        }
+
+        auto* idItem = ui->tblRooms->item(row, 0);
+        if (!idItem) return;
+
+        const QString gameId = idItem->text().trimmed();
+        if (gameId.isEmpty()) return;
+
+        ui->stackedWidget->setCurrentWidget(ui->pageGameSimple);
+        sendJson(QJsonObject{{"type","join"}, {"gameId", gameId}});
+        //gameID in simple zeigen
+        ui->lblGameIdSimple->setText(gameId);
+        ui->lblGameIdSimple->setText("creating...");
+
+
+    });
+    // ---------- Button-Connects (Page 4: GameSimple) ----------
+    connect(ui->btnHit, &QPushButton::clicked, this, &MainWindow::onHitClicked);
+    connect(ui->btnStand, &QPushButton::clicked, this, &MainWindow::onStandClicked);
+    connect(ui->btnHit, &QPushButton::clicked, this, &MainWindow::onSplitClicked);
+
+    // ---------- Button-Connects (Page 5: GameTable) ----------
+    connect(ui->btnHit2, &QPushButton::clicked, this, &MainWindow::onHitClicked);
+    connect(ui->btnStand2, &QPushButton::clicked, this, &MainWindow::onStandClicked);
+    connect(ui->btnSplit2, &QPushButton::clicked, this, &MainWindow::onSplitClicked);
+
+    connect(ui->btnSwitchToSimple, &QPushButton::clicked, this, [this]{
+        ui->stackedWidget->setCurrentWidget(ui->pageGameSimple);
+    });
+
+    connect(ui->btnLeaveGame2, &QPushButton::clicked, this, [this]{
+        // Zurück-Navigation: hier später auf Lobby/Room wechseln
+        ui->stackedWidget->setCurrentWidget(ui->pageCreateRoom);
+    });
+
+    // ---------- Socket-Connects ----------
     connect(&m_socket, &QTcpSocket::connected, this, &MainWindow::onConnected);
-    connect(&m_socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(&m_socket, &QTcpSocket::readyRead,  this, &MainWindow::onReadyRead);
     connect(&m_socket, &QTcpSocket::errorOccurred, this, &MainWindow::onErrorOccurred);
 
-    // Button Signale verbinden
-    connect(m_btnCreate, &QPushButton::clicked, this, &MainWindow::onCreateClicked);
-    connect(m_btnJoin,   &QPushButton::clicked, this, &MainWindow::onJoinClicked);
-    connect(m_btnHit,    &QPushButton::clicked, this, &MainWindow::onHitClicked);
-    connect(m_btnStand,  &QPushButton::clicked, this, &MainWindow::onStandClicked);
-
-    // Verbindung zum Server (localhost)
-    log("Connecting to 127.0.0.1:4242 ...");
+    // Verbindung zum Server herstellen
     m_socket.connectToHost("127.0.0.1", 4242);
 }
 
-void MainWindow::log(const QString& text)
+MainWindow::~MainWindow()
 {
-    m_log->append(text);
+    // UI-Speicher freigeben
+    delete ui;
 }
 
 void MainWindow::sendJson(const QJsonObject& obj)
 {
-    // JSON -> Bytes + '\n'
+    // JSON -> Bytes + '\n' (Line-Delimited JSON)
     QJsonDocument doc(obj);
     QByteArray data = doc.toJson(QJsonDocument::Compact);
     data.append('\n');
@@ -81,57 +124,74 @@ void MainWindow::sendJson(const QJsonObject& obj)
 
 void MainWindow::onConnected()
 {
-    log("Connected.");
+    // Verbindung steht
 }
 
 void MainWindow::onReadyRead()
 {
-    // Zeilenweise lesen
     while (m_socket.canReadLine()) {
-        QByteArray line = m_socket.readLine().trimmed();
+        const QByteArray line = m_socket.readLine().trimmed();
         if (line.isEmpty()) continue;
 
-        // In Log anzeigen
-        log("<< " + QString::fromUtf8(line));
-
-        // JSON parsen
-        QJsonDocument doc = QJsonDocument::fromJson(line);
+        const QJsonDocument doc = QJsonDocument::fromJson(line);
         if (!doc.isObject()) continue;
 
-        // Wenn server "created" sendet, gameId eintragen
-        QJsonObject obj = doc.object();
-        if (obj.value("type").toString() == "created") {
-            m_gameIdEdit->setText(obj.value("gameId").toString());
+        const QJsonObject obj = doc.object();
+        const QString type = obj.value("type").toString();
+
+        // Nach Create/Join zur GameSimple-Seite wechseln
+        if (type == "created" || type == "joined") {
+            const QString gameId = obj.value("gameId").toString();
+
+            ui->lblGameIdSimple->setText(gameId);
+            ui->stackedWidget->setCurrentWidget(ui->pageGameSimple);
+            continue;
+        }
+
+        // Spielstatus anzeigen (Page 4)
+        if (type == "state") {
+            const int playerTotal = obj.value("playerTotal").toInt();
+            const int dealerTotal = obj.value("dealerTotal").toInt();
+
+            ui->lblPlayerTotalSimple->setText(QString::number(playerTotal));
+            ui->lblDealerTotalSimple->setText(QString::number(dealerTotal));
+
+            // Optional: auch Page 5 updaten (falls sichtbar)
+            ui->lblSeat1Total->setText(QString::number(playerTotal));
+            ui->lblDealerTotalTable->setText(QString::number(dealerTotal));
+            continue;
+        }
+
+        // Ergebnis
+        if (type == "result") {
+            // Hier später Ergebnis-Text anzeigen
+            continue;
+        }
+
+        // Fehler
+        if (type == "error") {
+            // Hier später Fehlermeldung anzeigen
+            continue;
         }
     }
 }
 
 void MainWindow::onErrorOccurred(QAbstractSocket::SocketError)
 {
-    log("Socket error: " + m_socket.errorString());
-}
-
-void MainWindow::onCreateClicked()
-{
-    log(">> create");
-    sendJson(QJsonObject{{"type","create"}});
-}
-
-void MainWindow::onJoinClicked()
-{
-    const QString id = m_gameIdEdit->text().trimmed();
-    log(">> join " + id);
-    sendJson(QJsonObject{{"type","join"},{"gameId",id}});
+    // Fehlerbehandlung
 }
 
 void MainWindow::onHitClicked()
 {
-    log(">> hit");
     sendJson(QJsonObject{{"type","hit"}});
 }
 
 void MainWindow::onStandClicked()
 {
-    log(">> stand");
     sendJson(QJsonObject{{"type","stand"}});
+}
+
+void MainWindow::onSplitClicked()
+{
+    sendJson(QJsonObject{{"type","split"}});
 }

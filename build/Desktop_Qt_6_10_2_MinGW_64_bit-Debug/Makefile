@@ -36,7 +36,8 @@ SED           = $(QMAKE) -install sed
 MOVE          = move
 SUBTARGETS    =  \
 		sub-server \
-		sub-client
+		sub-client \
+		sub-testclient
 
 
 sub-server-qmake_all:  FORCE
@@ -89,6 +90,31 @@ sub-client-install_subtargets: FORCE
 sub-client-uninstall_subtargets: FORCE
 	@if not exist client\ mkdir client\ & if not exist client\ exit 1
 	cd client\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\client\client.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile uninstall
+sub-testclient-qmake_all:  FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug"
+	cd testclient\ && $(MAKE) -f Makefile qmake_all
+sub-testclient: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile
+sub-testclient-make_first: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile 
+sub-testclient-all: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile all
+sub-testclient-clean: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile clean
+sub-testclient-distclean: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile distclean
+sub-testclient-install_subtargets: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile install
+sub-testclient-uninstall_subtargets: FORCE
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile uninstall
 
 Makefile: ../../BlackJack.pro ../../../../Qt/6.10.2/mingw_64/mkspecs/win32-g++/qmake.conf ../../../../Qt/6.10.2/mingw_64/mkspecs/features/spec_pre.prf \
 		../../../../Qt/6.10.2/mingw_64/mkspecs/features/device_config.prf \
@@ -298,6 +324,7 @@ Makefile: ../../BlackJack.pro ../../../../Qt/6.10.2/mingw_64/mkspecs/win32-g++/q
 		../../../../Qt/6.10.2/mingw_64/mkspecs/features/qt_config.prf \
 		../../../../Qt/6.10.2/mingw_64/mkspecs/win32-g++/qmake.conf \
 		../../../../Qt/6.10.2/mingw_64/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		../../../../Qt/6.10.2/mingw_64/mkspecs/features/exclusive_builds.prf \
 		../../../../Qt/6.10.2/mingw_64/mkspecs/features/toolchain.prf \
 		../../../../Qt/6.10.2/mingw_64/mkspecs/features/default_pre.prf \
@@ -525,6 +552,7 @@ Makefile: ../../BlackJack.pro ../../../../Qt/6.10.2/mingw_64/mkspecs/win32-g++/q
 ../../../../Qt/6.10.2/mingw_64/mkspecs/features/qt_config.prf:
 ../../../../Qt/6.10.2/mingw_64/mkspecs/win32-g++/qmake.conf:
 ../../../../Qt/6.10.2/mingw_64/mkspecs/features/spec_post.prf:
+.qmake.stash:
 ../../../../Qt/6.10.2/mingw_64/mkspecs/features/exclusive_builds.prf:
 ../../../../Qt/6.10.2/mingw_64/mkspecs/features/toolchain.prf:
 ../../../../Qt/6.10.2/mingw_64/mkspecs/features/default_pre.prf:
@@ -546,16 +574,16 @@ Makefile: ../../BlackJack.pro ../../../../Qt/6.10.2/mingw_64/mkspecs/win32-g++/q
 qmake: FORCE
 	@$(QMAKE) -o Makefile ..\..\BlackJack.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug"
 
-qmake_all: sub-server-qmake_all sub-client-qmake_all FORCE
+qmake_all: sub-server-qmake_all sub-client-qmake_all sub-testclient-qmake_all FORCE
 
-make_first: sub-server-make_first sub-client-make_first  FORCE
-all: sub-server-all sub-client-all  FORCE
-clean: sub-server-clean sub-client-clean  FORCE
-distclean: sub-server-distclean sub-client-distclean  FORCE
+make_first: sub-server-make_first sub-client-make_first sub-testclient-make_first  FORCE
+all: sub-server-all sub-client-all sub-testclient-all  FORCE
+clean: sub-server-clean sub-client-clean sub-testclient-clean  FORCE
+distclean: sub-server-distclean sub-client-distclean sub-testclient-distclean  FORCE
 	-$(DEL_FILE) Makefile
 	-$(DEL_FILE) .qmake.stash
-install_subtargets: sub-server-install_subtargets sub-client-install_subtargets FORCE
-uninstall_subtargets: sub-server-uninstall_subtargets sub-client-uninstall_subtargets FORCE
+install_subtargets: sub-server-install_subtargets sub-client-install_subtargets sub-testclient-install_subtargets FORCE
+uninstall_subtargets: sub-server-uninstall_subtargets sub-client-uninstall_subtargets sub-testclient-uninstall_subtargets FORCE
 
 sub-server-debug:
 	@if not exist server\ mkdir server\ & if not exist server\ exit 1
@@ -563,7 +591,10 @@ sub-server-debug:
 sub-client-debug:
 	@if not exist client\ mkdir client\ & if not exist client\ exit 1
 	cd client\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\client\client.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile debug
-debug: sub-server-debug sub-client-debug
+sub-testclient-debug:
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile debug
+debug: sub-server-debug sub-client-debug sub-testclient-debug
 
 sub-server-release:
 	@if not exist server\ mkdir server\ & if not exist server\ exit 1
@@ -571,7 +602,10 @@ sub-server-release:
 sub-client-release:
 	@if not exist client\ mkdir client\ & if not exist client\ exit 1
 	cd client\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\client\client.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile release
-release: sub-server-release sub-client-release
+sub-testclient-release:
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile release
+release: sub-server-release sub-client-release sub-testclient-release
 
 sub-server-check:
 	@if not exist server\ mkdir server\ & if not exist server\ exit 1
@@ -579,7 +613,10 @@ sub-server-check:
 sub-client-check:
 	@if not exist client\ mkdir client\ & if not exist client\ exit 1
 	cd client\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\client\client.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile check
-check: sub-server-check sub-client-check
+sub-testclient-check:
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile check
+check: sub-server-check sub-client-check sub-testclient-check
 
 sub-server-benchmark:
 	@if not exist server\ mkdir server\ & if not exist server\ exit 1
@@ -587,7 +624,10 @@ sub-server-benchmark:
 sub-client-benchmark:
 	@if not exist client\ mkdir client\ & if not exist client\ exit 1
 	cd client\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\client\client.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile benchmark
-benchmark: sub-server-benchmark sub-client-benchmark
+sub-testclient-benchmark:
+	@if not exist testclient\ mkdir testclient\ & if not exist testclient\ exit 1
+	cd testclient\ && ( if not exist Makefile $(QMAKE) -o Makefile C:\QTProjects\BlackJack\testclient\testclient.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug" ) && $(MAKE) -f Makefile benchmark
+benchmark: sub-server-benchmark sub-client-benchmark sub-testclient-benchmark
 install:install_subtargets  FORCE
 
 uninstall: uninstall_subtargets FORCE

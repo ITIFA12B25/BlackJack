@@ -11,13 +11,28 @@ class QLineEdit;
 class QTextEdit;
 class QLabel;
 
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    MainWindow();
-
+    // Konstruktor für UI (.ui) benutzen
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
 private:
+    // Zugriff auf Widgets aus mainwindow.ui
+    Ui::MainWindow *ui;
+
+    // Verbindung zum Server
+    QTcpSocket m_socket;
+
+    // Hilfsfunktion: JSON senden
+    void sendJson(const QJsonObject& obj);
+
+/*private:
     // Verbindung zum Server
     QTcpSocket m_socket;
 
@@ -31,7 +46,8 @@ private:
 
     // Hilfsfunktionen
     void log(const QString& text);
-    void sendJson(const QJsonObject& obj);
+    void sendJson(const QJsonObject& obj);*/
+
 
 private slots:
     // Socket-Events
@@ -39,11 +55,10 @@ private slots:
     void onReadyRead();
     void onErrorOccurred(QAbstractSocket::SocketError);
 
-    // Button-Events
-    void onCreateClicked();
-    void onJoinClicked();
+    // Game-Buttons (werden von Page 4 und Page 5 genutzt)
     void onHitClicked();
     void onStandClicked();
+    void onSplitClicked();
 };
 
 #endif // MAINWINDOW_H
