@@ -315,7 +315,7 @@ void GameSession::broadcastToRoom(const QJsonObject& obj)
 // - Bei Finished sind Dealer-Karten sichtbar
 // ------------------------------------------------------------
 void GameSession::broadcastState(RoomState& r)
-{
+{    
     // Dealer-Karten: im Spiel erste Karte verdeckt
     QJsonArray dealerCards;
     for (int i = 0; i < r.dealer.cards.size(); ++i) {
@@ -356,9 +356,13 @@ void GameSession::broadcastState(RoomState& r)
     state["p1_total"] = handValue(r.players[1].hand);
     state["p1_stood"] = r.players[1].stood;
 
-    // An beide Sessions senden
+    // An beide Sessions/client seat Nr zu schieken
     for (int i = 0; i < 2; ++i) {
-        if (r.sessions[i]) r.sessions[i]->sendJson(state);
+        if (r.sessions[i]) {
+            QJsonObject perClient = state; // kopie
+            perClient["you"] = i;          // seat_Nr
+            r.sessions[i]->sendJson(perClient);
+        }
     }
 }
 
